@@ -118,7 +118,7 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## 📫 Contact
 
-Tushin Kulshreshtha - [@nottushin](https://twitter.com/yourtwitter) 
+Tushin Kulshreshtha - [@nottushin](https://twitter.com/nottushin) 
 
 Project Link: [https://github.com/Dextron04/ServerManager-ios](https://github.com/Dextron04/ServerManager-ios)
 
