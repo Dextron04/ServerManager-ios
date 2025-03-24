@@ -1,5 +1,7 @@
 # 🖥️ Server Manager
 
+![Generated Image March 24, 2025 - 1_47AM png](https://github.com/user-attachments/assets/7837d4d7-0aad-4e83-99c3-09cc4855a9f7)
+
 A modern, elegant SwiftUI application for managing and monitoring your server infrastructure with style.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
