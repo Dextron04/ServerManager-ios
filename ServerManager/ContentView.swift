@@ -10,12 +10,11 @@ import SwiftUI
 struct ContentView: View {
     @State private var servers: [Server] = [
         Server(name: "Production Server", status: .online, ipAddress: "192.168.1.1", uptime: "15d 4h"),
-        Server(name: "Development Server", status: .maintenance, ipAddress: "192.168.1.2", uptime: "2d 6h"),
+        Server(name: "Development Server", status: .offline, ipAddress: "192.168.1.2", uptime: "2d 6h"),
         Server(name: "Backup Server", status: .offline, ipAddress: "192.168.1.3", uptime: "0d 0h")
     ]
     
     @State private var animateSplash = false
-    
     @State private var selectedTab = 0
     @State private var showingAddServer = false
     @State private var showSplash: Bool = true
