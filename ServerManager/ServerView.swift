@@ -115,33 +115,58 @@ struct StatusBadgeView: View {
 // MARK: - Server Detail View
 struct ServerDetailView: View {
     let server: Server
+    @State private var stats: ServerStats?
+    @State private var isStatsLoading = true
+    @State private var statsError: String?
+    
     @State private var isShowingLogs = false
     @State private var isShowingSSH = false
     @State private var isRestarting = false
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                // Header
-                ServerHeaderView(server: server)
-                
-                // Quick Actions
-                QuickActionsView(
-                    isRestarting: $isRestarting,
-                    isShowingSSH: $isShowingSSH,
-                    isShowingLogs: $isShowingLogs
-                )
-                
-                // Resources
-                ResourcesCardView(server: server)
-                
-                // Server Information
-                InformationCardView(server: server)
-            }
-            .padding()
+                   VStack(spacing: 20) {
+                       // Header
+                       ServerHeaderView(server: server)
+                       
+                       // Quick Actions
+                       QuickActionsView(
+                           isRestarting: $isRestarting,
+                           isShowingSSH: $isShowingSSH,
+                           isShowingLogs: $isShowingLogs
+                       )
+                       
+                       // ■ conditional Resources card
+                       if isStatsLoading {
+                           ProgressView("Loading stats…")
+                               .frame(maxWidth: .infinity)
+                       }
+                       else if let err = statsError {
+                           Text(err)
+                               .foregroundColor(.red)
+                               .multilineTextAlignment(.center)
+                               .padding()
+                       }
+                       else if let stats {
+                           // pass real stats into the card
+                           ResourcesCardView(stats: stats)
+                       }
+                       
+                       // Server Information
+                       InformationCardView(server: server)
+                   }
+                   .padding()
+               }
+               .navigationTitle(server.name)
+               .navigationBarTitleDisplayMode(.large)
+        .task {
+            await loadStats()
         }
-        .navigationTitle(server.name)
-        .navigationBarTitleDisplayMode(.large)
+        .refreshable {
+          Task.detached {
+            await loadStats()
+          }
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
@@ -173,6 +198,23 @@ struct ServerDetailView: View {
         }
         .sheet(isPresented: $isShowingLogs) {
             ServerLogsView(server: server)
+        }
+    }
+    
+    private func loadStats() async {
+        isStatsLoading = true
+        defer { isStatsLoading = false }
+
+        do {
+            let fetched = try await ServerStatsService.shared
+                .fetchStats(serverName: server.name)
+            stats = fetched
+        }
+        catch is CancellationError {
+            print("🔄 loadStats was cancelled")
+        }
+        catch {
+            statsError = error.localizedDescription
         }
     }
 }
@@ -281,12 +323,9 @@ struct ActionButtonView: View {
 }
 
 struct ResourcesCardView: View {
-    let server: Server
-    // Using hard-coded values to avoid adding fake data
-    let cpuUsage = 45
-    let memoryUsage = 68
-    let diskUsage = 72
-    
+    // Old: let cpuUsage = 45, etc.
+    let stats: ServerStats
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Resources")
@@ -294,9 +333,36 @@ struct ResourcesCardView: View {
                 .padding(.leading, 8)
             
             VStack(spacing: 16) {
-                ResourceGraphViews(title: "CPU Usage", value: cpuUsage, icon: "cpu", color: .blue)
-                ResourceGraphViews(title: "Memory Usage", value: memoryUsage, icon: "memorychip", color: .green)
-                ResourceGraphViews(title: "Disk Usage", value: diskUsage, icon: "internaldrive", color: .purple)
+                ResourceGraphViews(
+                  title: "CPU Load (1m)",
+                  value: stats.cpu.loadavg1min,
+                  icon: "cpu"
+                )
+                ResourceGraphViews(
+                  title: "CPU Load (5m)",
+                  value: stats.cpu.loadavg5min,
+                  icon: "cpu"
+                )
+                ResourceGraphViews(
+                  title: "CPU Load (15m)",
+                  value: stats.cpu.loadavg15min,
+                  icon: "cpu"
+                )
+                
+                ResourceGraphViews(
+                  title: "Memory Usage",
+                  value: Double(stats.memory.usagePercent) ?? 0,
+                  icon: "memorychip"
+                )
+                
+                ResourceGraphViews(
+                  title: "Disk Usage",
+                  value: Double(
+                    stats.disk.usePercent
+                      .trimmingCharacters(in: CharacterSet(charactersIn: "%"))
+                  ) ?? 0,
+                  icon: "internaldrive"
+                )
             }
             .padding()
             .background(
@@ -308,40 +374,38 @@ struct ResourcesCardView: View {
     }
 }
 
+
 struct ResourceGraphViews: View {
     let title: String
-    let value: Int
+    let value: Double
     let icon: String
-    let color: Color
     
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(color)
                 .frame(width: 24)
             
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text(title)
                         .font(.subheadline)
-                    
                     Spacer()
-                    
-                    Text("\(value)%")
+                    Text("\(String(format: "%.1f", value))%")
                         .font(.subheadline.bold())
-                        .foregroundColor(color)
                 }
                 
-                GeometryReader { geometry in
+                GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         RoundedRectangle(cornerRadius: 4)
                             .fill(Color.gray.opacity(0.2))
                             .frame(height: 8)
                         
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(usageColor)
-                            .frame(width: geometry.size.width * CGFloat(value) / 100, height: 8)
+                            .fill(self.barColor)
+                            .frame(
+                              width: geo.size.width * CGFloat(min(value, 100) / 100),
+                              height: 8
+                            )
                     }
                 }
                 .frame(height: 8)
@@ -349,17 +413,14 @@ struct ResourceGraphViews: View {
         }
     }
     
-    var usageColor: Color {
-        if value < 60 {
-            return color
-        } else if value < 80 {
-            return .orange
-        } else {
-            return .red
+    private var barColor: Color {
+        switch value {
+        case 0..<60:  return .green
+        case 60..<80: return .orange
+        default:      return .red
         }
     }
 }
-
 struct InformationCardView: View {
     let server: Server
     

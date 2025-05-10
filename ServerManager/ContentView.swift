@@ -64,7 +64,17 @@ struct ContentView: View {
                     }
                 }
                 .refreshable {
-                    await loadServers()
+                    Task.detached {
+                        await MainActor.run { isLoading = true }
+                        defer { Task { await MainActor.run { isLoading = false } } }
+
+                        do {
+                            let list = try await ServerService.shared.fetchServers()
+                            await MainActor.run { servers = list }
+                        } catch {
+                            await MainActor.run { errorMessage = error.localizedDescription }
+                        }
+                    }
                 }
                 .task {
                     await loadServers()
@@ -100,13 +110,20 @@ struct ContentView: View {
         }
     }
     private func loadServers() async {
+        isLoading = true
+        defer { isLoading = false }
         do {
             let list = try await ServerService.shared.fetchServers()
             servers = list
-            isLoading = false
-        } catch {
+        }
+        catch is CancellationError {
+            // ❗️ This is expected if the refresh task was torn down—
+            //     swallow it so you don’t show a “cancelled” error.
+            print("🔄 loadServers was cancelled")
+        }
+        catch {
+            // Only genuine networking/decoding errors land here
             errorMessage = error.localizedDescription
-            isLoading = false
         }
     }
 }
