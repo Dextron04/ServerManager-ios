@@ -5,7 +5,6 @@ struct Server: Identifiable {
     let name: String
     let status: ServerStatus
     let ipAddress: String
-    let uptime: String
 }
 
 enum ServerStatus: String {
@@ -55,11 +54,6 @@ struct ServerRowView: View {
                         
                         Text("•")
                             .foregroundColor(.secondary)
-                        
-                        Text(server.uptime)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
                     }
                 }
                 
@@ -385,8 +379,6 @@ struct InformationCardView: View {
                 
                 Divider()
                     .padding(.leading, 48)
-                
-                DetailRowView(icon: "clock", title: "Uptime", value: server.uptime)
                 
                 Divider()
                     .padding(.leading, 48)

@@ -8,11 +8,15 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var servers: [Server] = [
-        Server(name: "Production Server", status: .online, ipAddress: "192.168.1.1", uptime: "15d 4h"),
-        Server(name: "Development Server", status: .offline, ipAddress: "192.168.1.2", uptime: "2d 6h"),
-        Server(name: "Backup Server", status: .offline, ipAddress: "192.168.1.3", uptime: "0d 0h")
-    ]
+//    @State private var servers: [Server] = [
+//        Server(name: "Production Server", status: .online, ipAddress: "192.168.1.1"),
+//        Server(name: "Development Server", status: .offline, ipAddress: "192.168.1.2"),
+//        Server(name: "Backup Server", status: .offline, ipAddress: "192.168.1.3")
+//    ]
+    
+    @State private var servers: [Server] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
     
     @State private var animateSplash = false
     @State private var selectedTab = 0
@@ -36,9 +40,19 @@ struct ContentView: View {
         TabView {
             // Servers List Tab
             NavigationView {
-                List {
-                    ForEach(servers) { server in
-                        ServerRowView(server: server)
+                Group {
+                    if isLoading && servers.isEmpty {
+                        ProgressView()
+                    } else if let err = errorMessage {
+                        Text(err)
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                    } else {
+                        List(servers) { server in
+                            ServerRowView(server: server)
+                        }
+                        .listStyle(.insetGrouped)
                     }
                 }
                 .navigationTitle("Servers")
@@ -48,6 +62,12 @@ struct ContentView: View {
                             Image(systemName: "plus")
                         }
                     }
+                }
+                .refreshable {
+                    await loadServers()
+                }
+                .task {
+                    await loadServers()
                 }
             }
             .tabItem {
@@ -79,7 +99,20 @@ struct ContentView: View {
             .tag(2)
         }
     }
+    private func loadServers() async {
+        do {
+            let list = try await ServerService.shared.fetchServers()
+            servers = list
+            isLoading = false
+        } catch {
+            errorMessage = error.localizedDescription
+            isLoading = false
+        }
+    }
 }
+
+
+
 
 
 #Preview {
