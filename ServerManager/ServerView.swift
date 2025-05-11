@@ -112,6 +112,11 @@ struct StatusBadgeView: View {
     }
 }
 
+struct AlertMessage: Identifiable {
+    let id = UUID()
+    let text: String
+}
+
 // MARK: - Server Detail View
 struct ServerDetailView: View {
     let server: Server
@@ -123,6 +128,13 @@ struct ServerDetailView: View {
     @State private var isShowingSSH = false
     @State private var isRestarting = false
     
+    @State private var showingPasswordPrompt = false
+    @State private var passwordInput = ""
+    @State private var restartMessage: String? = nil
+    @State private var showRestartResult = false
+    @State private var showConfirmRestart = false
+    @State private var alertMessage: AlertMessage?
+    
     var body: some View {
         ScrollView {
                    VStack(spacing: 20) {
@@ -131,7 +143,7 @@ struct ServerDetailView: View {
                        
                        // Quick Actions
                        QuickActionsView(
-                           isRestarting: $isRestarting,
+                           onRestart: {showingPasswordPrompt = true},
                            isShowingSSH: $isShowingSSH,
                            isShowingLogs: $isShowingLogs
                        )
@@ -152,12 +164,63 @@ struct ServerDetailView: View {
                            ResourcesCardView(stats: stats)
                        }
                        
+                       if let msg = restartMessage {
+                           Text(msg)
+                               .foregroundColor(.secondary)
+                               .padding(.top)
+                       }
+                       
                        // Server Information
                        InformationCardView(server: server)
                    }
                    .padding()
                }
                .navigationTitle(server.name)
+        
+               .alert("Restart Server?",
+                      isPresented: $showConfirmRestart
+               ) {
+                   Button("Cancel", role: .cancel) { }
+                   Button("Confirm", role: .destructive) {
+                       showingPasswordPrompt = true
+                   }
+               } message: {
+                   Text("Are you sure you want to restart \(server.name)?")
+               }
+        
+               .sheet(isPresented: $showingPasswordPrompt) {
+                   VStack(spacing: 16) {
+                       Text("Enter Admin Password")
+                           .font(.headline)
+                       SecureField("Password", text: $passwordInput)
+                           .textFieldStyle(.roundedBorder)
+                           .padding(.horizontal)
+                       
+                       HStack {
+                           Button("Cancel") {
+                               showingPasswordPrompt = false
+                               passwordInput = ""
+                           }
+                           Spacer()
+                           Button("Confirm") {
+                               restartServer()
+                           }
+                           .disabled(passwordInput.isEmpty)
+                       }
+                       .padding()
+                   }
+                   .presentationDetents([.fraction(0.25)])
+               }
+        
+               .alert(item: $alertMessage) { alert in
+                   Alert(
+                       title: Text("Restart Result"),
+                       message: Text(alert.text),
+                       dismissButton: .default(Text("OK")) {
+                           // nothing more needed—alertMessage goes back to nil automatically
+                       }
+                   )
+               }
                .navigationBarTitleDisplayMode(.large)
         .task {
             await loadStats()
@@ -184,15 +247,15 @@ struct ServerDetailView: View {
                 }
             }
         }
-        .alert("Restarting Server", isPresented: $isRestarting) {
-            Button("Cancel", role: .cancel) { isRestarting = false }
-            Button("Confirm", role: .destructive) {
-                // Implement restart logic here
-                isRestarting = false
-            }
-        } message: {
-            Text("Are you sure you want to restart \(server.name)?")
-        }
+//        .alert("Restarting Server", isPresented: $isRestarting) {
+//            Button("Cancel", role: .cancel) { isRestarting = false }
+//            Button("Confirm", role: .destructive) {
+//                // Implement restart logic here
+//                isRestarting = false
+//            }
+//        } message: {
+//            Text("Are you sure you want to restart \(server.name)?")
+//        }
         .sheet(isPresented: $isShowingSSH) {
             SSHConnectionView(server: server)
         }
@@ -215,6 +278,23 @@ struct ServerDetailView: View {
         }
         catch {
             statsError = error.localizedDescription
+        }
+    }
+    
+    private func restartServer() {
+        showingPasswordPrompt = false
+        isRestarting = true
+        Task {
+            do {
+                let resp = try await ServerCommandService.shared
+                    .restartServer(serverName: server.name,
+                                   password: passwordInput)
+                alertMessage = AlertMessage(text: resp.message)
+            } catch {
+                alertMessage = AlertMessage(text: "Error: \(error.localizedDescription)")
+            }
+            showRestartResult = true
+            passwordInput = ""
         }
     }
 }
@@ -246,7 +326,7 @@ struct ServerHeaderView: View {
 }
 
 struct QuickActionsView: View {
-    @Binding var isRestarting: Bool
+    let onRestart: () -> Void
     @Binding var isShowingSSH: Bool
     @Binding var isShowingLogs: Bool
     
@@ -262,7 +342,7 @@ struct QuickActionsView: View {
                     icon: "arrow.clockwise",
                     color: .orange
                 ) {
-                    isRestarting = true
+                    onRestart()
                 }
                 
                 ActionButtonView(
@@ -291,6 +371,10 @@ struct QuickActionsView: View {
             }
             .padding(.horizontal, 4)
         }
+    }
+    
+    func restart() {
+        
     }
 }
 

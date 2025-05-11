@@ -67,3 +67,7 @@ enum ServerServiceError: LocalizedError {
         }
     }
 }
+
+struct CommandResponse: Decodable {
+    let message: String
+}

@@ -76,7 +76,6 @@ struct ServerStatsService {
 //        decoder.keyDecodingStrategy = .convertFromSnakeCase
 
         do {
-            // Try to decode directly
             return try decoder.decode(ServerStats.self, from: data)
         }
         catch let decodingError as DecodingError {
@@ -93,6 +92,52 @@ struct ServerStatsService {
             // Any other error (e.g. networking)
             print("❌ Unexpected error:", otherError)
             throw otherError
+        }
+    }
+}
+
+struct ServerCommandService {
+    static let shared = ServerCommandService()
+    let session: URLSession
+    
+    private init(session: URLSession = .shared) {
+        self.session = session
+    }
+    
+    struct RestartRequest: Encodable {
+        let password: String
+    }
+    
+    func restartServer(serverName: String, password: String) async throws -> CommandResponse {
+        print("Server Name is \(serverName)")
+        let url: URL = {
+            switch serverName {
+            case "Dex Pi 2":
+                return URL(string: "https://rest.dextron04.in/raspi2/restart")!
+            case "Dex Pi 4B":
+                return URL(string: "https://rest.dextron04.in/raspi4b/restart")!
+            default:
+                return URL(string: "https://rest.dextron04.in/api/restart")!
+            }
+        }()
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body = RestartRequest(password: password)
+        request.httpBody = try? JSONEncoder().encode(body)
+        
+        let (data, _) = try await session.data(for: request)
+        
+        do {
+            let response = try JSONDecoder().decode(CommandResponse.self, from: data)
+            if let str = String(data: data, encoding: .utf8) {
+                print("📥 Raw JSON (Restart):\n\(str)")
+            }
+            return response
+        } catch {
+            throw URLError(.badServerResponse)
         }
     }
 }
