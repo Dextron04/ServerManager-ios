@@ -94,8 +94,6 @@ The app follows a clean MVVM pattern:
 
 ## 🙏 Acknowledgments
 
-CSC 660/680 Final Project – inspired by class guidelines citeturn0file0
-
 | Student ID | Name                 |
 | ---------- | -------------------- |
 | 922180763  | Tushin Kulshreshtha  |
