@@ -127,3 +127,6 @@ Project Link: [https://github.com/Dextron04/ServerManager-ios](https://github.co
 ---
 
 Made with ❤️ by [Tushin Kulshreshtha (aka Dextron04)]
+Pritham Sandhu
+Nidhey Patel
+Yashwardhan Singh Rathore
