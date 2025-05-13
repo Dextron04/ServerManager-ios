@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct MonitoringView: View {
-    @State private var services: [ServiceInfo] = sampleServices
+    @State private var services: [ServiceInfo] = []
     @State private var alerts: [AlertInfo] = sampleAlerts
-    @State private var isRefreshing = false
+    @State private var isLoadingServices = false
     
     var body: some View {
         NavigationView {
@@ -13,8 +13,19 @@ struct MonitoringView: View {
                 }
                 
                 Section(header: Text("Active Services")) {
-                    ForEach(services) { service in
-                        ServiceRowView(service: service)
+                    if isLoadingServices {
+                        ProgressView()
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    else if services.isEmpty {
+                        Text("No active services")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    else {
+                        ForEach(services) { service in
+                            ServiceRowView(service: service)
+                        }
                     }
                 }
                 
@@ -35,27 +46,30 @@ struct MonitoringView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        refreshData()
+                        Task {
+                            await loadServices()
+                        }
                     } label: {
                         Image(systemName: "arrow.clockwise")
                     }
                 }
             }
             .refreshable {
-                refreshData()
+                await loadServices()
+            }
+            .task {
+                await loadServices()
             }
         }
     }
     
-    private func refreshData() {
-        isRefreshing = true
-        
-        // Simulate network request
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            // In a real app, you would fetch actual data here
-            services = sampleServices.shuffled()
-            alerts = sampleAlerts.shuffled().prefix(Int.random(in: 1...3)).map { $0 }
-            isRefreshing = false
+    private func loadServices() async {
+        isLoadingServices = true
+        defer {isLoadingServices = false}
+        do {
+            services = try await MonitoringService.shared.fetchServices()
+        } catch {
+            print("Failed to load services: \(error)")
         }
     }
 }

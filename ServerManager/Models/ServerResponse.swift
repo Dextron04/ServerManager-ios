@@ -71,3 +71,15 @@ enum ServerServiceError: LocalizedError {
 struct CommandResponse: Decodable {
     let message: String
 }
+
+struct ServicesResponse: Decodable {
+    let services: [ServiceData]
+}
+
+struct ServiceData: Decodable {
+    let unit: String
+    let load: String
+    let active: String
+    let sub: String
+    let description: String
+}
