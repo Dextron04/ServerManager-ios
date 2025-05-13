@@ -48,9 +48,6 @@ A modern, elegant SwiftUI application for managing and monitoring your server in
 * Sessions are explicitly closed upon dismissal to prevent memory leaks or lingering connections.
 * Restart server command via POST `/restart-server` with password prompt via SwiftUI alerts and sheets.
 * Displayed API response message in alert using `AlertMessage` wrapper.
-* Integrated NMSSH to provide an interactive SSH terminal in-app:
-
-  * Uses `SSHViewModel` with `NMSSHSession` and `NMSSHChannel`.
   * Monospaced terminal view with input field.
 
 ### 📄 Log Viewer
