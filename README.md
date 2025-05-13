@@ -50,7 +50,7 @@ A modern, elegant SwiftUI application for managing and monitoring your server in
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/server-manager.git
+git clone https://github.com/Dextron04/server-manager.git
 ```
 
 2. Open the project in Xcode
@@ -82,32 +82,15 @@ The project is built with native SwiftUI and Foundation frameworks, requiring no
 3. Configure refresh intervals
 4. Set up notification preferences
 
-### Monitoring Configuration
-```swift
-struct MonitoringConfig {
-    static let defaultRefreshInterval: TimeInterval = 5.0
-    static let alertThreshold: Double = 90.0
-    static let criticalCPUThreshold: Double = 95.0
-}
-```
-
-## 🤝 Contributing
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
 ## 🙏 Acknowledgments
 
-- SwiftUI framework
-- Apple's SF Symbols
-- The Swift community
+| Student ID | Name         |
+|------------|--------------|
+| 922180763     | Tushin Kulshreshtha |
+| 921759459     | Yashwardhan Rathore  |
+| 922397291     | Pritham Singh Sandhu  |
+| 100004     | Nidhey Patel   |
+
 
 ## 🔮 Roadmap
 
@@ -127,6 +110,3 @@ Project Link: [https://github.com/Dextron04/ServerManager-ios](https://github.co
 ---
 
 Made with ❤️ by [Tushin Kulshreshtha (aka Dextron04)]
-Pritham Sandhu
-Nidhey Patel
-Yashwardhan Singh Rathore
