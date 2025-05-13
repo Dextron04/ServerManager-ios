@@ -618,48 +618,112 @@ struct SSHConnectionView: View {
 struct ServerLogsView: View {
     let server: Server
     @Environment(\.presentationMode) var presentationMode
-    @State private var logFilter = "All"
-    
-    let logOptions = ["All", "Error", "Warning", "Info"]
-    
+
+    @State private var logFilter: String = "All"
+    @State private var logs: [LogEntry] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
+    let logOptions = ["All"] + LogEntry.LogLevel.allCases.map { $0.rawValue }
+
+    var filtered: [LogEntry] {
+        guard logFilter != "All", let lvl = LogEntry.LogLevel(rawValue: logFilter) else {
+            return logs
+        }
+        return logs.filter { $0.level == lvl }
+    }
+
     var body: some View {
         NavigationView {
             VStack {
-                // Log filtering options
                 Picker("Filter", selection: $logFilter) {
-                    ForEach(logOptions, id: \.self) { option in
-                        Text(option)
-                    }
+                    ForEach(logOptions, id: \.self) { Text($0) }
                 }
-                .pickerStyle(SegmentedPickerStyle())
+                .pickerStyle(.segmented)
                 .padding()
-                
-                // Your logs implementation here
-                // Placeholder for log entries
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Logs will appear here when connected to your server")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
+
+                if isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                else if let err = errorMessage {
+                    Text(err)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                }
+                else if filtered.isEmpty {
+                    Text("No logs")
+                        .foregroundColor(.secondary)
+                        .padding()
+                }
+                else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 12) {
+                            ForEach(filtered) { entry in
+                                LogRow(entry: entry)
+                                    .padding(.horizontal)
+                            }
+                        }
+                        .padding(.vertical)
                     }
-                    .padding()
                 }
             }
             .navigationTitle("Server Logs")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
+                    Button("Close") { presentationMode.wrappedValue.dismiss() }
                 }
-                
                 ToolbarItem(placement: .primaryAction) {
-                    Button(action: {}) {
+                    Button { Task { await loadLogs() } } label: {
                         Image(systemName: "arrow.clockwise")
                     }
+                }
+            }
+            .refreshable { await loadLogs() }
+            .task { await loadLogs() }
+        }
+    }
+
+    private func loadLogs() async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        do {
+            logs = try await MonitoringService.shared
+                .fetchLogs(serverName: server.name)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+}
+
+private struct LogRow: View {
+    let entry: LogEntry
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Circle()
+                .fill(entry.level.color)
+                .frame(width: 8, height: 8)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(entry.message)
+                    .font(.body)
+
+                HStack(spacing: 6) {
+                    Text(entry.level.rawValue)
+                        .font(.caption)
+                        .foregroundColor(entry.level.color)
+
+                    Text("·")
+
+                    Text(RelativeDateTimeFormatter()
+                        .localizedString(for: entry.timestamp, relativeTo: Date()))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
         }

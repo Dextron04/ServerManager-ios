@@ -5,6 +5,7 @@
 //  Created by Tushin Kulshreshtha on 5/9/25.
 //
 import Foundation
+import SwiftUICore
 
 struct ServerResponse: Decodable {
     let servers: [String: ServerInfo]
@@ -82,4 +83,31 @@ struct ServiceData: Decodable {
     let active: String
     let sub: String
     let description: String
+}
+
+struct LogEntry: Identifiable, Decodable {
+    let id: String
+    let message: String
+    let level: LogLevel
+    let timestamp: Date
+
+    enum LogLevel: String, Decodable, CaseIterable {
+        case info   = "Info"
+        case warning = "Warning"
+        case error  = "Error"
+        case other  = "Other"
+
+        var color: Color {
+            switch self {
+            case .info:    return .blue
+            case .warning: return .orange
+            case .error:   return .red
+            case .other:   return .gray
+            }
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, message, level, timestamp
+    }
 }

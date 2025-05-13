@@ -7,6 +7,11 @@ struct MonitoringService {
     private struct AltertsResponse: Decodable {
         let alerts: [AlertInfo]
     }
+    
+    private struct LogsResponse: Decodable {
+        let logs: [LogEntry]
+    }
+
 
 
 
@@ -81,4 +86,37 @@ struct MonitoringService {
             let resp = try decoder.decode(AlertsResponse.self, from: data)
             return resp.alerts
     }
+    
+    func fetchLogs(serverName: String) async throws -> [LogEntry] {
+        let url: URL = {
+            switch serverName {
+            case "Dex Pi 2":
+                return URL(string: "https://rest.dextron04.in/raspi2/logs")!
+            case "Dex Pi 4B":
+                return URL(string: "https://rest.dextron04.in/raspi4b/logs")!
+            default:
+                return URL(string: "https://rest.dextron04.in/api/logs")!
+            }
+        }()
+            let (data, _) = try await URLSession.shared.data(from: url)
+            if let raw = String(data: data, encoding: .utf8) {
+              print("🔴 Raw alerts response:\n\(raw)")
+            }
+            
+
+            // ISO8601 with fractional seconds
+            let iso = ISO8601DateFormatter()
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .custom { decoder in
+                let container = try decoder.singleValueContainer()
+                let str = try container.decode(String.self)
+                if let d = iso.date(from: str) { return d }
+                throw DecodingError.dataCorruptedError(in: container,
+                  debugDescription: "Invalid date: \(str)")
+            }
+
+            return try decoder.decode(LogsResponse.self, from: data).logs
+        }
 }
