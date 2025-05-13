@@ -4,109 +4,108 @@
 
 A modern, elegant SwiftUI application for managing and monitoring your server infrastructure with style.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Platform](https://img.shields.io/badge/platform-iOS%2015.0+-orange.svg)
-![Swift](https://img.shields.io/badge/Swift-5.5+-brightgreen.svg)
+## ✨ Implemented Features
 
-## ✨ Features
+### 🔍 Dynamic Server List
 
-### 🔮 Real-Time Server Monitoring
-- Live status indicators for all your servers
-- Detailed resource usage tracking (CPU, Memory, Disk)
-- Comprehensive server health metrics
-- Real-time alert system
+* Fetched servers from REST endpoint (`/get-servers`) via `ServerService` using async/await.
+* Displays live status, IP, and uptime in a SwiftUI `List`.
+* Servers are identified by name and IP, and the list reflects real-time connectivity status.
+* Future extensions can include latency checks and offline detection.
+* Pull-to-refresh and initial `.task` loading.
+* Fetched servers from REST endpoint (`/get-servers`) via `ServerService` using async/await.
+* Displays live status, IP, and uptime in a SwiftUI `List`.
+* Pull-to-refresh and initial `.task` loading.
 
-### 🎛️ Server Management
-- One-tap server restart
-- Direct SSH connection capability
-- Log viewer integration
-- Resource usage graphs
-- Quick-action toolbar
+### 📊 Server Detail & Stats
 
-### 📊 Dashboard
-- System-wide resource monitoring
-- Customizable refresh intervals
-- Priority-based alert system
-- Performance trending
+* Tapping a server navigates to `ServerDetailView`.
+* Fetches and decodes system-stats (`/system-stats`, `/raspi2/system-stats`, `/raspi4b/system-stats`) into `ServerStats` model.
+* Real-time Resources card shows CPU load, memory %, and disk usage graphs.
+* Error and loading states handled gracefully.
 
-### ⚙️ Customization
-- Dark/Light mode support
-- Configurable notification settings
-- Adjustable monitoring intervals
-- Personalized dashboard layouts
+### 🔔 Alerts Integration
 
-## 📱 Screenshots
+* Retrieved alerts via `/api/alerts` endpoint in `MonitoringService`.
+* Custom JSON decoding with ISO8601 fractional-seconds strategy.
+* Displayed in Alerts section with severity badge and relative timestamp.
 
-[Place screenshots here]
+### ⚙️ Service Monitoring
 
-## 🚀 Getting Started
+* Fetched active services from `/api/services`.
+* Mapped JSON fields (`unit`, `load`, `sub`) into `ServiceInfo` and displayed in MonitoringView.
+* Color-coded statuses: Running, Warning (exited), Stopped.
 
-### Prerequisites
-- Xcode 14.0+
-- iOS 15.0+
-- Swift 5.5+
+### 🛠️ Server Command & SSH
 
-### Installation
+* Restart server command via POST `/restart-server` with password prompt via SwiftUI alerts and sheets.
+* Displayed API response message in alert using `AlertMessage` wrapper.
+* Integrated NMSSH to provide an interactive SSH terminal in-app:
 
-1. Clone the repository
-```bash
-git clone https://github.com/Dextron04/server-manager.git
-```
+  * Uses `SSHViewModel` with `NMSSHSession` and `NMSSHChannel`.
+  * Monospaced terminal view with input field.
+* Basic password handling is implemented securely in-app; however, for production use, consider encrypting credentials, disabling root logins, or using SSH keys with keychain integration.
+* Sessions are explicitly closed upon dismissal to prevent memory leaks or lingering connections.
+* Restart server command via POST `/restart-server` with password prompt via SwiftUI alerts and sheets.
+* Displayed API response message in alert using `AlertMessage` wrapper.
+* Integrated NMSSH to provide an interactive SSH terminal in-app:
 
-2. Open the project in Xcode
-```bash
-cd server-manager
-open ServerManager.xcodeproj
-```
+  * Uses `SSHViewModel` with `NMSSHSession` and `NMSSHChannel`.
+  * Monospaced terminal view with input field.
 
-3. Build and run the project
+### 📄 Log Viewer
+
+* Fetched logs from `/api/logs?ip=` endpoint.
+* Decoded `LogEntry` including `message`, `level`, and fractional timestamp.
+* Filterable segmented picker for All/Info/Warning/Error/Other.
+* Scrollable log feed with color indicators.
+
+### 🖥️ Dashboard
+
+* Combined MonitoringView shows System Overview (CPU, Memory, Disk) via `SystemMetricView`.
+* Active Services and Alerts sections all data-driven.
+* Pull-to-refresh and auto-load on appear.
 
 ## 🏗️ Architecture
 
-The app follows a clean architecture pattern with SwiftUI and Combine framework:
+The app follows a clean MVVM pattern:
 
-- **Views**: SwiftUI views for the user interface
-- **Models**: Data models for server information
-- **ViewModels**: Business logic and data processing
-- **Services**: Network and persistence layers
+* **Views**: SwiftUI views (`ContentView`, `ServerListView`, `ServerDetailView`, `MonitoringView`, `ServerLogsView`, etc.)
+* **ViewModels**: `SSHViewModel` for SSH session management
+* **Models**: `Server`, `ServerStats`, `ServiceInfo`, `AlertInfo`, `LogEntry`
+* **Services**: Network layers (`ServerService`, `ServerStatsService`, `ServerCommandService`, `MonitoringService`)
 
 ## 📦 Dependencies
 
-The project is built with native SwiftUI and Foundation frameworks, requiring no external dependencies.
+* **SwiftUI** & **Foundation**: UI and networking
 
-## 🛠️ Configuration
+## 🛠️ Getting Started
 
-### Server Setup
-1. Navigate to Settings
-2. Add your server credentials
-3. Configure refresh intervals
-4. Set up notification preferences
+> Note: This app relies on a running backend with specific REST endpoints (e.g., `/get-servers`, `/system-stats`, `/logs`). Make sure the API base URL is correctly configured—either hardcoded or exposed through a settings/environment system.
+
+1. Clone the repository
+
+   ```bash
+   git clone https://github.com/Dextron04/ServerManager-ios.git
+   ```
+2. Open in Xcode 14.0+ and build
+3. Ensure your Caddy/Express backend is running and endpoints are reachable
+
+## 📈 Roadmap
+
+*
 
 ## 🙏 Acknowledgments
 
-| Student ID | Name         |
-|------------|--------------|
-| 922180763     | Tushin Kulshreshtha |
-| 921759459     | Yashwardhan Rathore  |
-| 922397291     | Pritham Singh Sandhu  |
-| 100004     | Nidhey Patel   |
+CSC 660/680 Final Project – inspired by class guidelines citeturn0file0
 
-
-## 🔮 Roadmap
-
-- [ ] Multiple server environments support
-- [ ] Advanced analytics dashboard
-- [ ] Custom alert rules
-- [ ] Automated server maintenance
-- [ ] Performance optimization tools
-- [ ] Cloud provider integrations
-
-## 📫 Contact
-
-Tushin Kulshreshtha - [@nottushin](https://twitter.com/nottushin) 
-
-Project Link: [https://github.com/Dextron04/ServerManager-ios](https://github.com/Dextron04/ServerManager-ios)
+| Student ID | Name                 |
+| ---------- | -------------------- |
+| 922180763  | Tushin Kulshreshtha  |
+| 921759459  | Yashwardhan Rathore  |
+| 922397291  | Pritham Singh Sandhu |
+| 922402855  | Nidhey Patel         |
 
 ---
 
-Made with ❤️ by [Tushin Kulshreshtha (aka Dextron04)]
+Made with ❤️ by \[Tushin Kulshreshtha (aka Dextron04)]
