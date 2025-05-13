@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MonitoringView: View {
     @State private var services: [ServiceInfo] = []
-    @State private var alerts: [AlertInfo] = sampleAlerts
+    @State private var alerts: [AlertInfo] = []
     @State private var isLoadingServices = false
     
     var body: some View {
@@ -56,9 +56,11 @@ struct MonitoringView: View {
             }
             .refreshable {
                 await loadServices()
+                await loadAlerts()
             }
             .task {
                 await loadServices()
+                await loadAlerts()
             }
         }
     }
@@ -70,6 +72,14 @@ struct MonitoringView: View {
             services = try await MonitoringService.shared.fetchServices()
         } catch {
             print("Failed to load services: \(error)")
+        }
+    }
+    
+    private func loadAlerts() async {
+        do {
+            alerts = try await MonitoringService.shared.fetchSystemAlerts()
+        } catch {
+            print("Failed to load alerts: \(error)")
         }
     }
 }
@@ -203,25 +213,30 @@ struct ServiceRowView: View {
     }
 }
 
-struct AlertInfo: Identifiable {
-    let id = UUID()
+struct AlertInfo: Identifiable, Decodable {
+    let id: String                  // ← use the API’s UUID
     let title: String
     let description: String
     let severity: AlertSeverity
     let timestamp: Date
-    
-    enum AlertSeverity: String {
-        case high = "High"
+
+    enum AlertSeverity: String, Decodable {
+        case high   = "High"
         case medium = "Medium"
-        case low = "Low"
-        
+        case low    = "Low"
+
         var color: Color {
             switch self {
-            case .high: return .red
+            case .high:   return .red
             case .medium: return .orange
-            case .low: return .blue
+            case .low:    return .blue
             }
         }
+    }
+
+    // map JSON keys if needed (here they match)
+    private enum CodingKeys: String, CodingKey {
+        case id, title, description, severity, timestamp
     }
 }
 
@@ -263,24 +278,9 @@ struct AlertRowView: View {
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
     }
+    
+
 }
-
-// Sample data
-let sampleServices: [ServiceInfo] = [
-    ServiceInfo(name: "Nginx Server", status: .running, description: "Web server handling HTTP requests", uptime: "14 days, 3 hours"),
-    ServiceInfo(name: "MySQL Database", status: .running, description: "Primary database server", uptime: "7 days, 12 hours"),
-    ServiceInfo(name: "Redis Cache", status: .running, description: "In-memory data store", uptime: "14 days, 3 hours"),
-    ServiceInfo(name: "Apache Kafka", status: .warning, description: "Stream-processing service", uptime: "2 days, 8 hours"),
-    ServiceInfo(name: "Docker Engine", status: .running, description: "Container management", uptime: "5 days, 6 hours"),
-    ServiceInfo(name: "ElasticSearch", status: .stopped, description: "Search and analytics engine", uptime: "0 minutes")
-]
-
-let sampleAlerts: [AlertInfo] = [
-    AlertInfo(title: "High CPU Usage", description: "Server 1 CPU usage above 90%", severity: .high, timestamp: Date().addingTimeInterval(-1800)),
-    AlertInfo(title: "Memory Warning", description: "Low memory on Development Server", severity: .medium, timestamp: Date().addingTimeInterval(-3600)),
-    AlertInfo(title: "Disk Space", description: "Server 2 disk space below 10%", severity: .high, timestamp: Date().addingTimeInterval(-7200)),
-    AlertInfo(title: "Service Restart", description: "Redis service restarted", severity: .low, timestamp: Date().addingTimeInterval(-14400))
-]
 
 //struct MonitoringView_Previews: PreviewProvider {
 //    static var previews: some View {
