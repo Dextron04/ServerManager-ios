@@ -4,6 +4,56 @@
 
 A modern, elegant SwiftUI application for managing and monitoring your server infrastructure with style.
 
+## Project Proposal
+
+## **Overview**
+
+**ServerManager** is an iOS application developed using SwiftUI that enables administrators to monitor and manage server infrastructure efficiently from a mobile device. While key features are outlined in the implementation section, this proposal highlights additional design, architecture, and deployment considerations.
+
+## **Project Goals**
+
+* Deliver a modern and responsive interface for real-time server monitoring.
+* Ensure secure and efficient SSH integration within the app.
+* Build a scalable, maintainable codebase following best practices (MVVM architecture).
+
+## **Additional Technical Highlights**
+
+### **Architecture**
+
+* **MVVM Design Pattern**: Promotes modularity, testability, and separation of concerns.
+* **Service Layer Abstraction**: Networking responsibilities are isolated into services like `ServerService`, `MonitoringService`, etc., making the app easy to maintain and extend.
+
+### **Error Handling & UX**
+
+* Centralized error handling with SwiftUI alerts and fallback UI states.
+* Consistent use of Swift Concurrency (`async/await`) ensures smooth data flow and responsive UI.
+* Pull-to-refresh and `.task` usage promotes a native, fluid user experience.
+
+### **Security Practices**
+
+* Password prompts are handled via secure SwiftUI input modals.
+* SSH sessions explicitly closed after use to prevent memory leaks.
+* App avoids persistent credential storage; future plans may include Keychain support or SSH keypair usage.
+
+### **Testing & Debugging**
+
+* Modular components support unit testing for ViewModels and Services.
+* JSON decoding strategies are robust to tolerate unexpected API changes (e.g., ISO8601 parsing with fractional seconds).
+
+## **Deployment Notes**
+
+* Requires Xcode 14+ and iOS 15+.
+* Backend must expose required endpoints and support CORS if used with HTTPS.
+* API base URL should be easily configurable (e.g., via environment settings or `AppConfig.swift`).
+
+## **Future Enhancements**
+
+* Push notifications for critical alerts.
+* Support for custom server groups or tags.
+* Integration with cloud providers (AWS, GCP, Azure).
+* Encrypted credential storage and biometric unlock.
+
+
 ## ✨ Implemented Features
 
 ### 🔍 Dynamic Server List
